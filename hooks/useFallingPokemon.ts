@@ -1,60 +1,57 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { FallingPokemon } from "@/components/pokedex/types";
 import {
   buildBurstEntry,
   buildFallingPokemon,
   buildSpritePool,
-  FALLING_POKEMON_REFRESH_MS,
   type SpritePoolEntry,
 } from "@/lib/fallingPokemon";
 
-const BURST_WINDOW_MS = 600;
+const BURST_WINDOW_MS = 150;
+const BURST_COOLDOWN_MS = 100;
 const MAX_BURST = 20;
 
 const computeBurstSize = (recentPresses: number) =>
   Math.min(recentPresses * recentPresses, MAX_BURST);
 
-export function useFallingPokemon(): FallingPokemon[] {
+export function useFallingPokemon(): {
+  fallingPokemon: FallingPokemon[];
+  rotatePokemon: (index: number) => void;
+} {
   const [background, setBackground] = useState<FallingPokemon[]>([]);
   const [burst, setBurst] = useState<FallingPokemon[]>([]);
   const spritePoolRef = useRef<SpritePoolEntry[]>([]);
   const pressTimestampsRef = useRef<number[]>([]);
+  const lastBurstAtRef = useRef<number>(0);
   const burstTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map(),
   );
 
-  // Background rain refresh loop
+  // Load initial background set once — sprites loop infinitely and rotate on iteration
   useEffect(() => {
     let cancelled = false;
-    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
-
-    const scheduleRefresh = () => {
-      refreshTimer = setTimeout(() => void load(), FALLING_POKEMON_REFRESH_MS);
-    };
-
-    const load = async () => {
-      try {
-        const results = await buildFallingPokemon(() => cancelled);
-        if (!cancelled) {
-          setBackground(results);
-          scheduleRefresh();
-        }
-      } catch {
-        if (!cancelled) {
-          setBackground([]);
-          scheduleRefresh();
-        }
-      }
-    };
-
-    void load();
+    void buildFallingPokemon(() => cancelled).then((results) => {
+      if (!cancelled) setBackground(results);
+    });
     return () => {
       cancelled = true;
-      if (refreshTimer) clearTimeout(refreshTimer);
     };
+  }, []);
+
+  // Swap one background sprite when its animation loops back to the top (off-screen)
+  const rotatePokemon = useCallback((index: number) => {
+    const pool = spritePoolRef.current;
+    if (pool.length === 0) return;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    setBackground((prev) => {
+      if (index >= prev.length) return prev;
+      const next = [...prev];
+      next[index] = { ...next[index], id: pick.id, sprite: pick.sprite };
+      return next;
+    });
   }, []);
 
   // Build sprite pool for burst
@@ -83,6 +80,9 @@ export function useFallingPokemon(): FallingPokemon[] {
       e.preventDefault();
 
       const now = Date.now();
+
+      if (now - lastBurstAtRef.current < BURST_COOLDOWN_MS) return;
+
       pressTimestampsRef.current = [
         ...pressTimestampsRef.current.filter((t) => now - t < BURST_WINDOW_MS),
         now,
@@ -92,6 +92,7 @@ export function useFallingPokemon(): FallingPokemon[] {
       if (pool.length === 0) return;
 
       const burstSize = computeBurstSize(pressTimestampsRef.current.length);
+      lastBurstAtRef.current = now;
       const newEntries: FallingPokemon[] = Array.from(
         { length: burstSize },
         () => {
@@ -126,5 +127,5 @@ export function useFallingPokemon(): FallingPokemon[] {
     };
   }, []);
 
-  return [...background, ...burst];
+  return { fallingPokemon: [...background, ...burst], rotatePokemon };
 }

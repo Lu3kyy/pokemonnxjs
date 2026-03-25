@@ -1,10 +1,15 @@
 import type { FallingPokemon, PokemonData } from "@/components/pokedex/types";
 import { MAX_DEX, MIN_DEX } from "@/components/pokedex/utils";
 
-export const FALLING_POKEMON_COUNT = 12;
-export const FALLING_POKEMON_REFRESH_MS = 5000;
+export const FALLING_POKEMON_COUNT = 36;
 export const SPRITE_POOL_SIZE = 200;
 const POOL_BATCH_SIZE = 20;
+const RAIN_BATCH_SIZE = 12;
+
+const RAIN_LANES = [3, 7, 11, 15, 19, 23, 77, 81, 85, 89, 93, 97];
+
+const getRainLaneLeft = (index: number): string =>
+  `${RAIN_LANES[index % RAIN_LANES.length]}%`;
 
 export type SpritePoolEntry = { id: number; sprite: string };
 
@@ -35,25 +40,45 @@ export const buildFallingPokemon = async (
   const ids = shufflePokemonIds();
   const results: FallingPokemon[] = [];
 
-  for (const id of ids) {
-    if (results.length >= FALLING_POKEMON_COUNT || cancelled()) break;
+  for (
+    let i = 0;
+    i < ids.length && results.length < FALLING_POKEMON_COUNT && !cancelled();
+    i += RAIN_BATCH_SIZE
+  ) {
+    const batch = ids.slice(i, i + RAIN_BATCH_SIZE);
+    const settled = await Promise.allSettled(
+      batch.map(async (id) => {
+        const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
+        if (!response.ok) return null;
+        const data = (await response.json()) as PokemonData;
+        const sprite = getSpriteUrl(data);
+        if (!sprite) return null;
 
-    const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
-    if (!response.ok) continue;
+        const duration = 18 + Math.random() * 14;
+        return {
+          id: data.id,
+          sprite,
+          uid: "",
+          left: "",
+          size: `${72 + Math.random() * 56}px`,
+          duration: `${duration}s`,
+          delay: `${-(Math.random() * duration)}s`,
+          opacity: Number((0.22 + Math.random() * 0.28).toFixed(2)),
+        } satisfies FallingPokemon;
+      }),
+    );
 
-    const data = (await response.json()) as PokemonData;
-    const sprite = getSpriteUrl(data);
-    if (!sprite) continue;
-
-    results.push({
-      id: data.id,
-      sprite,
-      left: `${Math.random() * 92}%`,
-      size: `${72 + Math.random() * 56}px`,
-      duration: `${18 + Math.random() * 14}s`,
-      delay: `${Math.random() * -6}s`,
-      opacity: Number((0.22 + Math.random() * 0.28).toFixed(2)),
-    });
+    for (const outcome of settled) {
+      if (cancelled() || results.length >= FALLING_POKEMON_COUNT) break;
+      if (outcome.status === "fulfilled" && outcome.value) {
+        const laneIndex = results.length;
+        results.push({
+          ...outcome.value,
+          uid: `lane-${laneIndex}`,
+          left: getRainLaneLeft(laneIndex),
+        });
+      }
+    }
   }
 
   return results;
@@ -105,7 +130,7 @@ export const buildBurstEntry = (
   id,
   sprite,
   uid: `burst-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-  left: `${Math.random() * 92}%`,
+  left: getRainLaneLeft(Math.floor(Math.random() * RAIN_LANES.length)),
   size: `${64 + Math.random() * 64}px`,
   duration: `${3 + Math.random() * 3}s`,
   delay: "0s",

@@ -17,7 +17,7 @@ export default function Home() {
     fetchPokemon, getRandomPokemon,
   } = usePokemon();
   const { favorites, isFavorite, toggleFavorite } = useFavorites(pokemon);
-  const fallingPokemon = useFallingPokemon();
+  const { fallingPokemon, rotatePokemon } = useFallingPokemon();
 
   const handlePointerMove = (event: MouseEvent<HTMLElement>) => {
     const { currentTarget, clientX, clientY } = event;
@@ -41,7 +41,7 @@ export default function Home() {
         ["--pointer-y" as string]: "0.35",
       }}
     >
-      <PokemonRainBackground fallingPokemon={fallingPokemon} />
+      <PokemonRainBackground fallingPokemon={fallingPokemon} onRotate={rotatePokemon} />
 
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-6">
         <PokedexHeader

@@ -54,6 +54,24 @@ input {
   z-index: 1;
 }
 
+.pokebg-hint {
+  position: absolute;
+  right: 6%;
+  bottom: 9%;
+  z-index: 1;
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 2.4vw, 2rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.42);
+  opacity: 0.16;
+  filter: blur(0.7px);
+  text-shadow:
+    0 0 18px rgba(255, 255, 255, 0.28),
+    0 0 30px rgba(253, 186, 116, 0.2);
+  animation: pokebg-hint-boo 3.2s ease-in-out infinite;
+}
+
 .pokebg-rain {
   position: absolute;
   top: -10rem;
@@ -164,7 +182,9 @@ input {
   }
 
   100% {
-    transform: translate3d(0, 122vh, 0) rotate(8deg);
+    /* 150vh ensures sprites always exit below the viewport,
+       even on small screens where the -10rem start offset is significant */
+    transform: translate3d(0, 150vh, 0) rotate(8deg);
   }
 }
 
@@ -179,5 +199,32 @@ input {
 
   100% {
     transform: translateY(0);
+  }
+}
+
+@keyframes pokebg-hint-boo {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(-1deg) scale(1);
+    opacity: 0.11;
+  }
+
+  25% {
+    transform: translate3d(-2px, -3px, 0) rotate(2deg) scale(1.03);
+    opacity: 0.18;
+  }
+
+  50% {
+    transform: translate3d(2px, -7px, 0) rotate(-2deg) scale(0.98);
+    opacity: 0.13;
+  }
+
+  75% {
+    transform: translate3d(-1px, -2px, 0) rotate(1deg) scale(1.02);
+    opacity: 0.2;
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-1deg) scale(1);
+    opacity: 0.11;
   }
 }

@@ -15,7 +15,7 @@ export function PokemonRainBackground({
       <div className="pokebg-rain-layer absolute inset-0">
         {fallingPokemon.map((entry, index) => (
           <Image
-            key={`${entry.id}-${index}`}
+            key={entry.uid ?? `${entry.id}-${index}`}
             src={entry.sprite}
             alt=""
             aria-hidden="true"
@@ -29,6 +29,13 @@ export function PokemonRainBackground({
               opacity: entry.opacity,
               animationDuration: entry.duration,
               animationDelay: entry.delay,
+              // Burst entries fall once then disappear; background entries loop
+              ...(entry.uid
+                ? {
+                    animationIterationCount: "1",
+                    animationFillMode: "forwards",
+                  }
+                : {}),
             }}
             width={128}
             height={128}

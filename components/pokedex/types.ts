@@ -60,4 +60,6 @@ export type FallingPokemon = {
   duration: string;
   delay: string;
   opacity: number;
+  /** Set on burst entries so they can be individually removed after their animation */
+  uid?: string;
 };

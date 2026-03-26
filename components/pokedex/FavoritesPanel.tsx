@@ -45,7 +45,7 @@ export function FavoritesPanel({ favorites, onSelect }: FavoritesPanelProps) {
         </ul>
       )}
       <p className="mt-5 text-xs font-medium tracking-[0.16em] text-slate-400 uppercase">
-        Tip: Search by exact Pokemon name or Pokedex number.
+        Tip: Search by exact Pokemon name or Pokedex number. Spacebar to make Pokémon rain, and arrow keys to navigate!
       </p>
     </motion.aside>
   );

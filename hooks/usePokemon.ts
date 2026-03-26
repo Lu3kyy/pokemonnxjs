@@ -63,7 +63,7 @@ export function usePokemon() {
           ? formatLabel(locationData[0].location_area.name)
           : "N/A";
 
-      let evolutions: string[] = [];
+      let evolutions: EvolutionPath[] = [];
       if (speciesRes.ok) {
         const speciesData = (await speciesRes.json()) as PokemonSpeciesData;
         const chainRes = await fetch(speciesData.evolution_chain.url);
